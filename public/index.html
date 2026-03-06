@@ -52,6 +52,20 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .expand-btn:hover{border-color:var(--green);color:var(--green)}
 footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9em}
 .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--green);color:var(--bg);font-weight:800;font-size:.85em;margin-right:10px;flex-shrink:0}
+.intent-section{background:var(--card);border-radius:16px;padding:28px;margin-bottom:16px}
+.intent-row{display:flex;gap:12px;align-items:flex-start}
+.intent-row textarea{flex:1;background:var(--card2);border:1px solid #333;border-radius:12px;color:var(--text);font-family:inherit;font-size:1em;padding:12px 16px;resize:none;outline:none;transition:border-color .2s}
+.intent-row textarea:focus{border-color:var(--green)}
+.intent-row textarea::placeholder{color:var(--muted)}
+.analyze-btn{background:var(--green);color:var(--bg);border:none;border-radius:12px;padding:12px 24px;font-size:1em;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.analyze-btn:hover{opacity:.85}
+.analyze-btn:disabled{opacity:.6;cursor:not-allowed}
+.analyze-btn.loading{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+.interpretation-card{background:var(--card2);border-left:3px solid var(--green);border-radius:0 12px 12px 0;padding:14px 18px;margin-top:14px;color:var(--text);font-size:.95em;line-height:1.5;display:none}
+.interpretation-card.visible{display:block}
+.stack-card.boosted{border-color:var(--green);box-shadow:0 0 24px rgba(2,226,172,.15)}
+.boost-reason{background:rgba(2,226,172,.08);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.9em;color:var(--green);font-style:italic}
 @media(max-width:600px){
   header h1{font-size:1.6em}
   .container{padding:12px}
@@ -66,6 +80,13 @@ footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9em}
 <p>Find your funding stack — powered by <a href="https://gitcoin.co" target="_blank">gitcoin.co</a></p>
 </header>
 <div class="container">
+<div class="intent-section">
+<div class="intent-row">
+<textarea id="intent-input" rows="2" placeholder="Describe your funding goals in plain English... (e.g., &quot;We're a small DAO with 200 members and $50K to fund open source developers&quot;)"></textarea>
+<button class="analyze-btn" id="analyze-btn" onclick="analyzeIntent()">✨ Analyze</button>
+</div>
+<div class="interpretation-card" id="interpretation-card"></div>
+</div>
 <div class="sliders">
 <div class="slider-group">
 <div class="slider-label"><span>💰 Budget</span><span id="v-budget">$100K</span></div>
@@ -397,7 +418,10 @@ function render() {
       `<a href="https://gitcoin.co/apps/${slug}" target="_blank">${APPS[slug] || slug}</a>`
     ).join(' • ');
 
-    return `<div class="stack-card">
+    const stackId = STACK_BOOST_MAP[st.name] || '';
+    const isBoosted = currentBoosts[stackId];
+    return `<div class="stack-card${isBoosted ? ' boosted' : ''}">
+      ${isBoosted ? '<div class="boost-reason">✨ ' + currentBoosts[stackId] + '</div>' : ''}
       <div class="stack-header">
         <div style="display:flex;align-items:center"><span class="rank-badge">${i+1}</span><span class="stack-name">${st.name}</span></div>
         <span class="confidence ${st.confidence}">${confEmoji} ${st.confidenceLabel}</span>
@@ -428,8 +452,90 @@ if (saved) {
   document.getElementById('s-timing').value = saved.t;
   document.getElementById('s-complexity').value = saved.x;
 }
-document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', render));
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', () => { currentBoosts = {}; render(); }));
 render();
+
+// Stack name to boost ID mapping
+const STACK_BOOST_MAP = {
+  'Community Discovery': 'community-discovery',
+  'Retroactive Impact': 'retroactive-impact',
+  'Protocol Sustainability': 'protocol-sustainability',
+  'DAO Treasury Deployment': 'dao-treasury',
+  'Grassroots Mutual Aid': 'grassroots-mutual-aid',
+  'Expert Allocation': 'expert-allocation',
+  'Continuous Funding': 'continuous-funding',
+  'Legitimacy Builder': 'legitimacy-builder',
+  'Innovation Scouting': 'innovation-scouting',
+  'Ecosystem Growth': 'ecosystem-growth',
+  'Simple & Proven': 'simple-proven',
+  'DeFi Native': 'defi-native',
+  'Impact Marketplace': 'impact-marketplace',
+  'Guild Model': 'guild-model',
+  'Pop-Up Funding': 'pop-up-funding'
+};
+const BOOST_TO_NAME = Object.fromEntries(Object.entries(STACK_BOOST_MAP).map(([k,v])=>[v,k]));
+
+let currentBoosts = {};
+
+async function analyzeIntent() {
+  const input = document.getElementById('intent-input').value.trim();
+  if (!input) return;
+  const btn = document.getElementById('analyze-btn');
+  const card = document.getElementById('interpretation-card');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = '⏳ Analyzing...';
+  card.classList.remove('visible');
+
+  try {
+    const resp = await fetch('/api/intent', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ intent: input })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    // Store boosts
+    currentBoosts = {};
+    if (data.boosts && data.reasoning) {
+      data.boosts.forEach(id => { if (data.reasoning[id]) currentBoosts[id] = data.reasoning[id]; });
+    }
+
+    // Animate sliders
+    const sliderMap = { budget:'s-budget', communitySize:'s-community', decisionStyle:'s-decision', timing:'s-timing', complexity:'s-complexity' };
+    for (const [key, elId] of Object.entries(sliderMap)) {
+      const el = document.getElementById(elId);
+      const target = data.sliders[key];
+      const start = +el.value;
+      if (start !== target) {
+        const steps = 12; let step = 0;
+        const animate = () => {
+          step++;
+          el.value = Math.round(start + (target - start) * (step / steps));
+          if (step < steps) requestAnimationFrame(animate);
+          render();
+        };
+        requestAnimationFrame(animate);
+      }
+    }
+
+    // Show interpretation
+    if (data.interpretation) {
+      card.textContent = '💡 ' + data.interpretation;
+      card.classList.add('visible');
+    }
+
+    render();
+  } catch (err) {
+    card.textContent = '⚠️ ' + (err.message || 'Something went wrong. Try again.');
+    card.classList.add('visible');
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '✨ Analyze';
+  }
+}
+
+// Allow Enter key (without shift) to submit
+document.getElementById('intent-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); analyzeIntent(); }
+});
 </script>
 </body>
 </html>
