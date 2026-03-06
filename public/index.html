@@ -453,9 +453,6 @@ if (saved) {
   document.getElementById('s-timing').value = saved.t;
   document.getElementById('s-complexity').value = saved.x;
 }
-document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', () => { currentBoosts = {}; render(); }));
-render();
-
 // Stack name to boost ID mapping
 const STACK_BOOST_MAP = {
   'Community Discovery': 'community-discovery',
@@ -475,6 +472,9 @@ const STACK_BOOST_MAP = {
   'Pop-Up Funding': 'pop-up-funding'
 };
 const BOOST_TO_NAME = Object.fromEntries(Object.entries(STACK_BOOST_MAP).map(([k,v])=>[v,k]));
+
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', () => { currentBoosts = {}; render(); }));
+render();
 
 async function analyzeIntent() {
   const input = document.getElementById('intent-input').value.trim();
