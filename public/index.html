@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mechanism Finder — Find Your Funding Stack</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#02E2AC;--bg:#0a0a0f;--card:#14141f;--card2:#1a1a2e;--text:#e0e0e0;--muted:#888;--red:#ff4757;--yellow:#ffa502;--greenBadge:#2ed573}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{text-align:center;padding:40px 20px 20px}
+header h1{font-size:2.4em;color:#fff;margin-bottom:8px}
+header h1 span{color:var(--green)}
+header p{color:var(--muted);font-size:1.1em}
+.sliders{background:var(--card);border-radius:16px;padding:28px;margin:24px 0}
+.slider-group{margin-bottom:20px}
+.slider-group:last-child{margin-bottom:0}
+.slider-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.95em}
+.slider-label span:first-child{font-weight:600;color:#fff}
+.slider-label span:last-child{color:var(--green);font-weight:500}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:#2a2a3e;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 10px rgba(2,226,172,.4)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--green);cursor:pointer;border:none}
+.results{margin:24px 0}
+.results h2{font-size:1.4em;color:#fff;margin-bottom:16px}
+.stack-card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;border:1px solid #222;transition:all .3s ease}
+.stack-card:hover{border-color:var(--green);box-shadow:0 0 20px rgba(2,226,172,.1)}
+.stack-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.stack-name{font-size:1.25em;font-weight:700;color:#fff}
+.confidence{font-size:.85em;padding:4px 10px;border-radius:20px;font-weight:600}
+.confidence.green{background:rgba(46,213,115,.15);color:var(--greenBadge)}
+.confidence.yellow{background:rgba(255,165,2,.15);color:var(--yellow)}
+.confidence.red{background:rgba(255,71,87,.15);color:var(--red)}
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:16px 0;padding:16px;background:var(--card2);border-radius:12px}
+.flow a{background:rgba(2,226,172,.1);padding:6px 14px;border-radius:8px;font-weight:600;font-size:.95em;white-space:nowrap}
+.flow .arrow{color:var(--green);font-size:1.2em;font-weight:bold}
+.stack-why{color:var(--muted);font-size:.95em;line-height:1.5}
+.score-bar{display:flex;align-items:center;gap:8px;margin-top:10px}
+.score-bar span{font-size:.8em;color:var(--muted)}
+.score-fill{height:4px;border-radius:2px;background:var(--green);transition:width .4s ease}
+.score-track{flex:1;height:4px;border-radius:2px;background:#2a2a3e}
+.deep-dive{overflow:hidden;max-height:0;transition:max-height .4s ease;padding:0 4px}
+.deep-dive.open{max-height:600px}
+.deep-dive-content{padding-top:16px;border-top:1px solid #2a2a3e;margin-top:16px}
+.deep-dive-content h4{color:#fff;font-size:.95em;margin-bottom:8px}
+.deep-dive-content p,.deep-dive-content li{color:var(--muted);font-size:.9em}
+.deep-dive-content ul{padding-left:18px;margin-bottom:12px}
+.expand-btn{background:none;border:1px solid #333;color:var(--muted);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:.85em;margin-top:12px;transition:all .2s}
+.expand-btn:hover{border-color:var(--green);color:var(--green)}
+footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9em}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--green);color:var(--bg);font-weight:800;font-size:.85em;margin-right:10px;flex-shrink:0}
+@media(max-width:600px){
+  header h1{font-size:1.6em}
+  .container{padding:12px}
+  .sliders{padding:18px}
+  .flow{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>Mechanism <span>Finder</span></h1>
+<p>Find your funding stack — powered by <a href="https://gitcoin.co" target="_blank">gitcoin.co</a></p>
+</header>
+<div class="container">
+<div class="sliders">
+<div class="slider-group">
+<div class="slider-label"><span>💰 Budget</span><span id="v-budget">$100K</span></div>
+<input type="range" id="s-budget" min="1" max="5" value="2">
+</div>
+<div class="slider-group">
+<div class="slider-label"><span>👥 Community Size</span><span id="v-community">50–500</span></div>
+<input type="range" id="s-community" min="1" max="5" value="2">
+</div>
+<div class="slider-group">
+<div class="slider-label"><span>🏛️ Decision Style</span><span id="v-decision">Balanced</span></div>
+<input type="range" id="s-decision" min="1" max="5" value="3">
+</div>
+<div class="slider-group">
+<div class="slider-label"><span>⏱️ Timing</span><span id="v-timing">Balanced</span></div>
+<input type="range" id="s-timing" min="1" max="5" value="3">
+</div>
+<div class="slider-group">
+<div class="slider-label"><span>🔧 Complexity Tolerance</span><span id="v-complexity">Medium</span></div>
+<input type="range" id="s-complexity" min="1" max="5" value="3">
+</div>
+</div>
+<div class="results">
+<h2>🏗️ Recommended Stacks</h2>
+<div id="results-container"></div>
+</div>
+</div>
+<footer>Data from <a href="https://gitcoin.co" target="_blank">gitcoin.co</a> • 78 mechanisms • 27 apps • 16 case studies</footer>
+
+<script>
+const LABELS = {
+  budget: ['$1K','$100K','$1M','$10M','$100M+'],
+  community: ['<50','50–500','500–5K','5K–50K','50K+'],
+  decision: ['Technocratic','Lean Expert','Balanced','Lean Democratic','Democratic'],
+  timing: ['Proactive','Lean Proactive','Balanced','Lean Retroactive','Retroactive'],
+  complexity: ['Simple','Lean Simple','Medium','Complex','Full Stack']
+};
+
+const M = {
+  qf: {name:'Quadratic Funding',slug:'quadratic-funding'},
+  milestone: {name:'Milestone-Based Funding',slug:'milestone-based-funding'},
+  streaming: {name:'Token Streaming',slug:'token-streaming'},
+  impact_att: {name:'Impact Attestations',slug:'impact-attestations'},
+  retro: {name:'Retroactive Funding',slug:'retroactive-funding'},
+  hypercerts: {name:'Impact Certificates (Hypercerts)',slug:'impact-certificates-hypercerts'},
+  self_reg: {name:'Self-Curated Registries',slug:'self-curated-registries'},
+  pct_pg: {name:'Percent-for-Public-Goods',slug:'percent-for-public-goods'},
+  conviction: {name:'Conviction Voting',slug:'conviction-voting'},
+  direct: {name:'Direct Grants',slug:'direct-grants'},
+  gift: {name:'Gift Circles',slug:'gift-circles'},
+  comm_curr: {name:'Community Currencies',slug:'community-currencies'},
+  mutual_aid: {name:'Mutual Aid Networks',slug:'mutual-aid-networks'},
+  rfp: {name:'Requests for Proposals (RFPs)',slug:'requests-for-proposals'},
+  abc: {name:'Augmented Bonding Curve',slug:'augmented-bonding-curve'},
+  autopgf: {name:'AutoPGF',slug:'autopgf'},
+  bounties: {name:'Bounties',slug:'bounties'},
+  prophouse: {name:'Prop House',slug:'prop-house'},
+  coalition: {name:'Coalitional Funding',slug:'coalitional-funding'},
+  crowdstake: {name:'Crowdstaking',slug:'crowdstaking'},
+  donation_mine: {name:'Donation Mining',slug:'donation-mining'},
+  deep_fund: {name:'Deep Funding (AI-PGF)',slug:'deep-funding'},
+  guilds: {name:'Guilds',slug:'guilds'},
+  domain_alloc: {name:'Dedicated Domain Allocation',slug:'dedicated-domain-allocation'},
+  coordinape: {name:'Coordinape',slug:'coordinape'},
+  ephemeral: {name:'Ephemeral DAOs',slug:'ephemeral-daos'},
+  commit_pool: {name:'Commitment Pooling',slug:'commitment-pooling'},
+  participatory: {name:'Participatory Budgeting',slug:'participatory-budgeting'}
+};
+
+const STACKS = [
+  {
+    name: 'Community Discovery',
+    mechanisms: [M.qf, M.milestone, M.streaming],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'Quadratic Funding surfaces community preferences, milestones ensure accountability, and streaming provides predictable payouts. Ideal for democratic communities with moderate budgets.',
+    // budget:1-3, community:2-4, decision:4-5 democratic, timing:1-3 proactive, complexity:2-4
+    score: (b,c,d,t,x) => g(b,[1,3])*2 + g(c,[2,4])*1.5 + g(d,[4,5])*2.5 + g(t,[1,3])*2 + g(x,[2,4])*1,
+    caseStudies: ['gg24-first-funding-round-of-gitcoin-3-0','unicef-alpha-round-partnership-driving-fairness-collaboration-impact'],
+    apps: ['gitcoin-grants-stack','superfluid','karma-gap'],
+    setupComplexity: 'Medium — requires matching pool, round setup, and milestone tracking',
+    failureModes: ['Sybil attacks on QF if identity verification is weak','Milestone definitions too vague leading to disputes','Streaming setup overhead for small grants']
+  },
+  {
+    name: 'Retroactive Impact',
+    mechanisms: [M.impact_att, M.retro, M.hypercerts],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'Attestations verify impact, retroactive funding rewards proven outcomes, and hypercerts create tradeable impact records. Best for orgs that prefer paying for results over promises.',
+    score: (b,c,d,t,x) => g(b,[3,5])*2 + g(c,[2,4])*1 + g(d,[2,4])*1.5 + g(t,[4,5])*3 + g(x,[3,5])*1.5,
+    caseStudies: ['filecoin-retropgf-retroactive-funding-beyond-optimism','gitcoin-citizens-round-1-retroactive-quadratic-funding-for-community-contributions','greenpill-hypercerts-experiment-impact-certificates-in-practice'],
+    apps: ['optimism-retropgf','gitcoin-grants-stack'],
+    setupComplexity: 'High — requires impact measurement framework, attestation infrastructure, and evaluation criteria',
+    failureModes: ['Impact hard to attribute to single projects','Evaluation criteria bias toward measurable over meaningful','Hypercerts liquidity may be low']
+  },
+  {
+    name: 'Protocol Sustainability',
+    mechanisms: [M.self_reg, M.pct_pg, M.streaming],
+    confidence: 'yellow', confidenceLabel: 'Theoretically sound',
+    why: 'Self-curated registries manage who receives funds, percent-for-public-goods creates automatic revenue flows, and streaming distributes continuously. Great for protocols with sustainable revenue.',
+    score: (b,c,d,t,x) => g(b,[4,5])*2.5 + g(c,[3,5])*1 + g(d,[1,3])*1.5 + g(t,[2,4])*1 + g(x,[1,3])*2,
+    caseStudies: ['optimism-from-plasma-group-research-to-a-2b-layer-2-ecosystem'],
+    apps: ['protocol-guild','superfluid','drips'],
+    setupComplexity: 'Low-Medium — once set up, runs automatically',
+    failureModes: ['Registry capture by insiders','Percentage too low to be meaningful','Revenue volatility in bear markets']
+  },
+  {
+    name: 'DAO Treasury Deployment',
+    mechanisms: [M.direct, M.conviction, M.milestone],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'Direct grants for fast initial allocation, conviction voting for ongoing community-driven distribution, milestones for accountability. Battle-tested DAO treasury pattern.',
+    score: (b,c,d,t,x) => g(b,[3,5])*2 + g(c,[3,5])*2 + g(d,[3,5])*2 + g(t,[1,3])*1.5 + g(x,[3,5])*1.5,
+    caseStudies: ['gg24-first-funding-round-of-gitcoin-3-0'],
+    apps: ['gardens-v2','arbitrum-dao-grants','karma-gap'],
+    setupComplexity: 'Medium — needs governance setup, proposal templates, milestone framework',
+    failureModes: ['Conviction voting favors whales','Direct grants can be captured by insiders','Voter apathy in large DAOs']
+  },
+  {
+    name: 'Grassroots Mutual Aid',
+    mechanisms: [M.gift, M.comm_curr, M.mutual_aid],
+    confidence: 'yellow', confidenceLabel: 'Theoretically sound',
+    why: 'Gift circles build trust, community currencies enable local exchange, and mutual aid networks formalize support. Perfect for small, tight-knit communities with limited budgets.',
+    score: (b,c,d,t,x) => g(b,[1,2])*2.5 + g(c,[1,2])*2.5 + g(d,[4,5])*2 + g(t,[1,3])*1 + g(x,[1,2])*2,
+    caseStudies: ['zuzalu-and-pop-up-cities-temporary-coordination-experiments'],
+    apps: ['giveth'],
+    setupComplexity: 'Low — primarily social infrastructure, minimal technical requirements',
+    failureModes: ['Gift circles don\'t scale past ~50 people','Community currencies need critical mass of participants','Free-rider problems without social accountability']
+  },
+  {
+    name: 'Expert Allocation',
+    mechanisms: [M.rfp, M.direct, M.hypercerts],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'RFPs define clear needs, expert reviewers allocate via direct grants, and impact certificates track outcomes. The traditional grants model, upgraded with onchain accountability.',
+    score: (b,c,d,t,x) => g(b,[2,4])*1.5 + g(c,[1,3])*1 + g(d,[1,2])*3 + g(t,[1,3])*2 + g(x,[2,4])*1.5,
+    caseStudies: ['1inch-from-hackathon-to-decentralized-exchange-powerhouse','shamba-network-equipping-smallholder-farmers-to-conserve-ecosystems'],
+    apps: ['ethereum-foundation-esp','base-ecosystem-fund','base-builder-grants'],
+    setupComplexity: 'Medium — requires clear RFP writing, evaluation rubrics, review committee',
+    failureModes: ['Expert bias and insider networks','RFPs too narrow, missing innovative approaches','Slow turnaround time']
+  },
+  {
+    name: 'Continuous Funding',
+    mechanisms: [M.abc, M.streaming, M.autopgf],
+    confidence: 'red', confidenceLabel: 'Experimental',
+    why: 'Bonding curves create sustainable token economics, streaming distributes funds continuously, and AutoPGF removes governance overhead. For teams wanting set-and-forget funding infrastructure.',
+    score: (b,c,d,t,x) => g(b,[3,5])*2 + g(c,[2,4])*1 + g(d,[2,4])*1 + g(t,[2,4])*1.5 + g(x,[4,5])*2.5,
+    caseStudies: [],
+    apps: ['superfluid','sablier','revnets'],
+    setupComplexity: 'High — bonding curve design, smart contract deployment, AutoPGF signal configuration',
+    failureModes: ['Bonding curve manipulation by whales','AutoPGF signals can be gamed','Requires significant initial liquidity']
+  },
+  {
+    name: 'Legitimacy Builder',
+    mechanisms: [M.qf, M.retro, M.impact_att],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'QF establishes democratic legitimacy, retroactive funding validates impact after the fact, and attestations create a permanent record. The gold standard for building credible funding programs.',
+    score: (b,c,d,t,x) => g(b,[2,4])*1.5 + g(c,[3,5])*2 + g(d,[3,5])*2.5 + g(t,[3,5])*2 + g(x,[3,5])*1,
+    caseStudies: ['eip-1559-how-quadratic-funding-legitimized-ethereum-s-most-important-fee-market-reform','gitcoin-citizens-round-1-retroactive-quadratic-funding-for-community-contributions','tornado-cash-how-quadratic-funding-sustained-ethereum-s-most-important-privacy-tool'],
+    apps: ['gitcoin-grants-stack','optimism-retropgf'],
+    setupComplexity: 'High — requires both proactive and retroactive infrastructure',
+    failureModes: ['Complexity overwhelms smaller teams','Two-phase approach doubles operational overhead','Attestation fatigue among evaluators']
+  },
+  {
+    name: 'Innovation Scouting',
+    mechanisms: [M.bounties, M.prophouse, M.retro],
+    confidence: 'yellow', confidenceLabel: 'Theoretically sound',
+    why: 'Bounties attract builders for specific tasks, Prop House enables community-curated competitions, and retroactive funding rewards the best outcomes. Great for discovering unknown talent.',
+    score: (b,c,d,t,x) => g(b,[1,3])*2 + g(c,[2,4])*1.5 + g(d,[3,5])*2 + g(t,[2,4])*2 + g(x,[2,4])*1.5,
+    caseStudies: ['austin-griffith-quadratic-freelancer-onboarding-developers','1inch-from-hackathon-to-decentralized-exchange-powerhouse'],
+    apps: ['nouns-dao','gitcoin-grants-stack'],
+    setupComplexity: 'Low-Medium — bounties are simple, Prop House needs round design',
+    failureModes: ['Bounty hunters optimize for payout not quality','Prop House rounds need active voter participation','Retroactive evaluation is subjective']
+  },
+  {
+    name: 'Ecosystem Growth',
+    mechanisms: [M.coalition, M.qf, M.milestone],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'Coalitional funding pools resources from multiple funders, QF ensures democratic allocation, and milestones track progress. The proven model for growing multi-stakeholder ecosystems.',
+    score: (b,c,d,t,x) => g(b,[4,5])*2.5 + g(c,[4,5])*2 + g(d,[3,5])*2 + g(t,[1,3])*1.5 + g(x,[3,5])*1.5,
+    caseStudies: ['gg24-first-funding-round-of-gitcoin-3-0','unicef-alpha-round-partnership-driving-fairness-collaboration-impact','coin-center-defending-cryptocurrency-rights-through-community-funded-advocacy'],
+    apps: ['gitcoin-grants-stack','allo-protocol','karma-gap'],
+    setupComplexity: 'High — multi-funder coordination, matching pool aggregation, milestone tracking',
+    failureModes: ['Funder coordination overhead','Conflicting funder priorities','QF Sybil resistance at scale']
+  },
+  {
+    name: 'Simple & Proven',
+    mechanisms: [M.direct, M.milestone],
+    confidence: 'green', confidenceLabel: 'Empirically validated',
+    why: 'Direct grants from trusted reviewers with milestone-based accountability. The simplest effective pattern — low overhead, high control, proven at every scale.',
+    score: (b,c,d,t,x) => g(b,[1,5])*0.5 + g(c,[1,3])*1.5 + g(d,[1,2])*2.5 + g(t,[1,3])*2 + g(x,[1,2])*3,
+    caseStudies: ['1inch-from-hackathon-to-decentralized-exchange-powerhouse','shamba-network-equipping-smallholder-farmers-to-conserve-ecosystems'],
+    apps: ['ethereum-foundation-esp','base-builder-grants','polygon-grants','scroll-grants'],
+    setupComplexity: 'Low — just needs a review committee and milestone template',
+    failureModes: ['Centralized decision-making risks','Reviewer fatigue at scale','Milestone gaming']
+  },
+  {
+    name: 'DeFi Native',
+    mechanisms: [M.abc, M.crowdstake, M.donation_mine],
+    confidence: 'red', confidenceLabel: 'Experimental',
+    why: 'Bonding curves for token economics, crowdstaking generates yield for public goods, donation mining incentivizes contributions. For DeFi-savvy communities wanting financialized funding.',
+    score: (b,c,d,t,x) => g(b,[2,4])*1.5 + g(c,[2,4])*1 + g(d,[2,4])*1 + g(t,[2,4])*1 + g(x,[4,5])*3.5,
+    caseStudies: [],
+    apps: ['octant','giveth','revnets'],
+    setupComplexity: 'Very High — smart contract design, token engineering, liquidity bootstrapping',
+    failureModes: ['Token price volatility','Regulatory risk','Complexity excludes non-DeFi users']
+  },
+  {
+    name: 'Impact Marketplace',
+    mechanisms: [M.hypercerts, M.deep_fund, M.retro],
+    confidence: 'red', confidenceLabel: 'Experimental',
+    why: 'Hypercerts tokenize impact, AI evaluates contributions at scale, and retroactive funding rewards proven results. The frontier of impact-driven capital allocation.',
+    score: (b,c,d,t,x) => g(b,[4,5])*2.5 + g(c,[3,5])*1 + g(d,[2,4])*1 + g(t,[4,5])*3 + g(x,[4,5])*2,
+    caseStudies: ['greenpill-hypercerts-experiment-impact-certificates-in-practice','filecoin-retropgf-retroactive-funding-beyond-optimism'],
+    apps: ['deepfunding','optimism-retropgf'],
+    setupComplexity: 'Very High — AI model training, impact measurement, hypercert infrastructure',
+    failureModes: ['AI evaluation biases','Hypercert market illiquidity','Impact measurement is subjective']
+  },
+  {
+    name: 'Guild Model',
+    mechanisms: [M.guilds, M.domain_alloc, M.coordinape],
+    confidence: 'yellow', confidenceLabel: 'Theoretically sound',
+    why: 'Guilds organize contributors by domain, dedicated allocation gives each domain autonomy, and Coordinape enables peer-based compensation. The DAO org chart pattern.',
+    score: (b,c,d,t,x) => g(b,[2,4])*1.5 + g(c,[2,4])*2 + g(d,[2,4])*2 + g(t,[1,3])*1.5 + g(x,[2,4])*2,
+    caseStudies: [],
+    apps: ['coordinape','arbitrum-dao-grants'],
+    setupComplexity: 'Medium — guild structure design, domain budgets, Coordinape circles',
+    failureModes: ['Guild silos and turf wars','Coordinape popularity contests','Domain allocation rigidity']
+  },
+  {
+    name: 'Pop-Up Funding',
+    mechanisms: [M.ephemeral, M.commit_pool, M.bounties],
+    confidence: 'yellow', confidenceLabel: 'Theoretically sound',
+    why: 'Ephemeral DAOs form around a goal, commitment pooling ensures buy-in, and bounties drive execution. Perfect for time-limited campaigns and events.',
+    score: (b,c,d,t,x) => g(b,[1,2])*2.5 + g(c,[1,3])*2 + g(d,[3,5])*2 + g(t,[1,2])*2 + g(x,[1,3])*2,
+    caseStudies: ['zuzalu-and-pop-up-cities-temporary-coordination-experiments'],
+    apps: ['juicebox','nouns-dao'],
+    setupComplexity: 'Low — lightweight by design, temporary infrastructure',
+    failureModes: ['Commitment thresholds not met','Bounty quality control','DAO dissolution disputes']
+  }
+];
+
+const CS = {
+  'gg24-first-funding-round-of-gitcoin-3-0': 'GG24 — First Funding Round of Gitcoin 3.0',
+  '1inch-from-hackathon-to-decentralized-exchange-powerhouse': '1inch: From Hackathon to DEX Powerhouse',
+  'unicef-alpha-round-partnership-driving-fairness-collaboration-impact': 'UNICEF Alpha Round Partnership',
+  'filecoin-retropgf-retroactive-funding-beyond-optimism': 'Filecoin RetroPGF',
+  'gitcoin-citizens-round-1-retroactive-quadratic-funding-for-community-contributions': 'Gitcoin Citizens Round 1',
+  'greenpill-hypercerts-experiment-impact-certificates-in-practice': 'GreenPill Hypercerts Experiment',
+  'eip-1559-how-quadratic-funding-legitimized-ethereum-s-most-important-fee-market-reform': 'EIP-1559 & Quadratic Funding',
+  'tornado-cash-how-quadratic-funding-sustained-ethereum-s-most-important-privacy-tool': 'Tornado Cash & QF',
+  'austin-griffith-quadratic-freelancer-onboarding-developers': 'Austin Griffith: Quadratic Freelancer',
+  'shamba-network-equipping-smallholder-farmers-to-conserve-ecosystems': 'Shamba Network',
+  'optimism-from-plasma-group-research-to-a-2b-layer-2-ecosystem': 'Optimism: From Plasma Group to L2',
+  'coin-center-defending-cryptocurrency-rights-through-community-funded-advocacy': 'Coin Center: Community-Funded Advocacy',
+  'zuzalu-and-pop-up-cities-temporary-coordination-experiments': 'Zuzalu & Pop-Up Cities',
+  'celo-easy-rpgf-lightweight-retroactive-funding': 'Celo Easy RPGF',
+  'pocket-network-retroactive-funding-ecosystem-retropgf': 'Pocket Network RetroPGF',
+  'quadraticlenster-launch-wrap-up': 'QuadraticLenster Launch'
+};
+
+const APPS = {
+  'allo-protocol':'Allo Protocol','arbitrum-dao-grants':'Arbitrum DAO Grants','artizen-fund':'Artizen Fund',
+  'base-builder-grants':'Base Builder Grants','base-ecosystem-fund':'Base Ecosystem Fund',
+  'coordinape':'Coordinape','deepfunding':'DeepFunding','drips':'Drips',
+  'ethereum-foundation-esp':'Ethereum Foundation ESP','flows-wtf':'Flows.wtf',
+  'gardens-v2':'Gardens','gitcoin-grants-stack':'Gitcoin Grants Stack','giveth':'Giveth',
+  'juicebox':'Juicebox','karma-gap':'Karma GAP','markee':'Markee','nouns-dao':'Nouns DAO',
+  'octant':'Octant','opensource-observer':'Open Source Observer','optimism-retropgf':'Optimism RetroPGF',
+  'polygon-grants':'Polygon Grants','protocol-guild':'Protocol Guild','revnets':'Revnets',
+  'sablier':'Sablier','scroll-grants':'Scroll Grants','superfluid':'Superfluid','tea-protocol':'Tea Protocol'
+};
+
+// Gaussian-ish range scoring: how well does value fit in [lo,hi] range (1-5 scale)
+function g(val, range) {
+  if (val >= range[0] && val <= range[1]) return 1;
+  const dist = val < range[0] ? range[0] - val : val - range[1];
+  return Math.max(0, 1 - dist * 0.35);
+}
+
+function getSliders() {
+  return {
+    b: +document.getElementById('s-budget').value,
+    c: +document.getElementById('s-community').value,
+    d: +document.getElementById('s-decision').value,
+    t: +document.getElementById('s-timing').value,
+    x: +document.getElementById('s-complexity').value
+  };
+}
+
+function updateLabels(s) {
+  document.getElementById('v-budget').textContent = LABELS.budget[s.b-1];
+  document.getElementById('v-community').textContent = LABELS.community[s.c-1];
+  document.getElementById('v-decision').textContent = LABELS.decision[s.d-1];
+  document.getElementById('v-timing').textContent = LABELS.timing[s.t-1];
+  document.getElementById('v-complexity').textContent = LABELS.complexity[s.x-1];
+}
+
+function updateHash(s) {
+  history.replaceState(null, '', '#b='+s.b+'&c='+s.c+'&d='+s.d+'&t='+s.t+'&x='+s.x);
+}
+
+function parseHash() {
+  const h = location.hash.slice(1);
+  if (!h) return null;
+  const p = {};
+  h.split('&').forEach(kv => { const [k,v] = kv.split('='); p[k] = +v; });
+  if (p.b && p.c && p.d && p.t && p.x) return p;
+  return null;
+}
+
+function render() {
+  const s = getSliders();
+  updateLabels(s);
+  updateHash(s);
+
+  const scored = STACKS.map(st => ({
+    ...st,
+    totalScore: st.score(s.b, s.c, s.d, s.t, s.x)
+  })).sort((a,b) => b.totalScore - a.totalScore);
+
+  const maxScore = scored[0].totalScore || 1;
+  const top3 = scored.slice(0, 3);
+  const container = document.getElementById('results-container');
+
+  container.innerHTML = top3.map((st, i) => {
+    const pct = Math.round(st.totalScore / maxScore * 100);
+    const confEmoji = st.confidence === 'green' ? '🟢' : st.confidence === 'yellow' ? '🟡' : '🔴';
+    const csLinks = st.caseStudies.length ? st.caseStudies.map(slug =>
+      `<li><a href="https://gitcoin.co/case-studies/${slug}" target="_blank">${CS[slug] || slug}</a></li>`
+    ).join('') : '<li>No case studies yet — this is frontier territory</li>';
+    const appLinks = st.apps.map(slug =>
+      `<a href="https://gitcoin.co/apps/${slug}" target="_blank">${APPS[slug] || slug}</a>`
+    ).join(' • ');
+
+    return `<div class="stack-card">
+      <div class="stack-header">
+        <div style="display:flex;align-items:center"><span class="rank-badge">${i+1}</span><span class="stack-name">${st.name}</span></div>
+        <span class="confidence ${st.confidence}">${confEmoji} ${st.confidenceLabel}</span>
+      </div>
+      <div class="flow">${st.mechanisms.map((m,j) =>
+        (j > 0 ? '<span class="arrow">→</span>' : '') +
+        `<a href="https://gitcoin.co/mechanisms/${m.slug}" target="_blank">${m.name}</a>`
+      ).join('')}</div>
+      <p class="stack-why">${st.why}</p>
+      <div class="score-bar"><span>Match</span><div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div><span>${pct}%</span></div>
+      <button class="expand-btn" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'▲ Less':'▼ Deep Dive'">▼ Deep Dive</button>
+      <div class="deep-dive"><div class="deep-dive-content">
+        <h4>📚 Related Case Studies</h4><ul>${csLinks}</ul>
+        <h4>⚙️ Setup Complexity</h4><p>${st.setupComplexity}</p>
+        <h4>⚠️ Failure Modes</h4><ul>${st.failureModes.map(f=>'<li>'+f+'</li>').join('')}</ul>
+        <h4>🛠️ Implementing Apps</h4><p>${appLinks}</p>
+      </div></div>
+    </div>`;
+  }).join('');
+}
+
+// Init
+const saved = parseHash();
+if (saved) {
+  document.getElementById('s-budget').value = saved.b;
+  document.getElementById('s-community').value = saved.c;
+  document.getElementById('s-decision').value = saved.d;
+  document.getElementById('s-timing').value = saved.t;
+  document.getElementById('s-complexity').value = saved.x;
+}
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
