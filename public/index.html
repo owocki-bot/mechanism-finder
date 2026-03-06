@@ -117,6 +117,7 @@ footer{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9em}
 <footer>Data from <a href="https://gitcoin.co" target="_blank">gitcoin.co</a> • 78 mechanisms • 27 apps • 16 case studies</footer>
 
 <script>
+let currentBoosts = {};
 const LABELS = {
   budget: ['$1K','$100K','$1M','$10M','$100M+'],
   community: ['<50','50–500','500–5K','5K–50K','50K+'],
@@ -474,8 +475,6 @@ const STACK_BOOST_MAP = {
   'Pop-Up Funding': 'pop-up-funding'
 };
 const BOOST_TO_NAME = Object.fromEntries(Object.entries(STACK_BOOST_MAP).map(([k,v])=>[v,k]));
-
-let currentBoosts = {};
 
 async function analyzeIntent() {
   const input = document.getElementById('intent-input').value.trim();
